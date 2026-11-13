@@ -1,0 +1,134 @@
+{
+  "entities": {
+    "ElectionState": {
+      "title": "ElectionState",
+      "description": "Estado global da eleição em Vila Esperança controlado pelo professor e sincronizado com os alunos",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["aguardando", "votacao", "apurando", "encerrada"],
+          "description": "Fase atual da eleição"
+        },
+        "urnaLiberada": {
+          "type": "boolean",
+          "description": "Se a urna eletrônica está destravada para votação dos alunos"
+        },
+        "turno": {
+          "type": "number",
+          "description": "Turno atual da eleição (1 ou 2)"
+        },
+        "candidatoApresentadoId": {
+          "type": "string",
+          "maxLength": 10,
+          "description": "ID ou número do candidato em destaque na apresentação"
+        },
+        "candidatosAtivos": {
+          "type": "array",
+          "description": "Lista de números dos candidatos participantes do turno atual"
+        },
+        "updatedAt": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Data e hora ISO da última atualização"
+        }
+      },
+      "required": ["status", "urnaLiberada", "turno", "candidatoApresentadoId", "candidatosAtivos", "updatedAt"]
+    },
+    "ElectionResults": {
+      "title": "ElectionResults",
+      "description": "Resultados apurados oficiais exibidos para todos os alunos e no painel do professor",
+      "type": "object",
+      "properties": {
+        "round": { "type": "number" },
+        "totalVotes": { "type": "number" },
+        "validVotes": { "type": "number" },
+        "candidates": { "type": "object" },
+        "blankVotes": { "type": "object" },
+        "nullVotes": { "type": "object" },
+        "connectedStudents": { "type": "number" },
+        "abstentions": { "type": "number" },
+        "winnerId": { "type": "string" },
+        "needsSecondRound": { "type": "boolean" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["round", "totalVotes", "validVotes", "candidates", "blankVotes", "nullVotes", "needsSecondRound"]
+    },
+    "StudentPresence": {
+      "title": "StudentPresence",
+      "description": "Registro de presença e participação de um aluno conectado pelo celular",
+      "type": "object",
+      "properties": {
+        "deviceId": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Identificador único do dispositivo do aluno"
+        },
+        "nickname": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Apelido ou primeiro nome do aluno"
+        },
+        "hasVotedRound1": {
+          "type": "boolean",
+          "description": "Indica se o aluno já registrou seu voto no 1º turno"
+        },
+        "hasVotedRound2": {
+          "type": "boolean",
+          "description": "Indica se o aluno já registrou seu voto no 2º turno"
+        },
+        "lastSeen": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Timestamp da última interação do aluno"
+        }
+      },
+      "required": ["deviceId", "nickname", "hasVotedRound1", "hasVotedRound2", "lastSeen"]
+    },
+    "SecretVote": {
+      "title": "SecretVote",
+      "description": "Cédula anônima depositada na urna eletrônica. Sem dados de identificação do aluno.",
+      "type": "object",
+      "properties": {
+        "candidateNumber": {
+          "type": "string",
+          "maxLength": 10,
+          "enum": ["91", "92", "93", "BRANCO", "NULO"],
+          "description": "Voto computado na urna"
+        },
+        "round": {
+          "type": "number",
+          "description": "Turno da eleição em que o voto foi depositado"
+        },
+        "timestamp": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Timestamp do registro na urna"
+        }
+      },
+      "required": ["candidateNumber", "round", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/election_state/{docId}": {
+      "schema": { "$ref": "#/entities/ElectionState" },
+      "description": "Documento central de controle da eleição"
+    },
+    "/election_results/{docId}": {
+      "schema": { "$ref": "#/entities/ElectionResults" },
+      "description": "Resultado oficial da apuração sincronizado para toda a turma"
+    },
+    "/presences/{deviceId}": {
+      "schema": { "$ref": "#/entities/StudentPresence" },
+      "description": "Presença e status de votação dos alunos conectados"
+    },
+    "/secret_votes_r1/{voteId}": {
+      "schema": { "$ref": "#/entities/SecretVote" },
+      "description": "Cédulas anônimas do 1º turno da eleição"
+    },
+    "/secret_votes_r2/{voteId}": {
+      "schema": { "$ref": "#/entities/SecretVote" },
+      "description": "Cédulas anônimas do 2º turno da eleição"
+    }
+  }
+}

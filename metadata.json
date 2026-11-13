@@ -1,0 +1,6 @@
+{
+  "name": "Eleição Vila Esperança - Urna Eletrônica Educativa",
+  "description": "Simulação de eleição municipal com réplica de urna eletrônica, colinha de propostas e controle em tempo real para aula de Ensino Sociocultural.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

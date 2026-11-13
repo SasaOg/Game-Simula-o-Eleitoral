@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function isValidElection(data) {
+      return data.keys().hasAll(['status', 'urnaLiberada', 'turno', 'candidatoApresentadoId', 'candidatosAtivos', 'updatedAt']) &&
+             data.keys().hasOnly(['status', 'urnaLiberada', 'turno', 'candidatoApresentadoId', 'candidatosAtivos', 'updatedAt']) &&
+             data.status in ['aguardando', 'votacao', 'apurando', 'encerrada'] &&
+             data.urnaLiberada is bool &&
+             data.turno is number &&
+             data.candidatoApresentadoId is string && data.candidatoApresentadoId.size() <= 10 &&
+             data.candidatosAtivos is list && data.candidatosAtivos.size() <= 10 &&
+             data.updatedAt is string && data.updatedAt.size() <= 64;
+    }
+
+    function isValidPresence(data) {
+      return data.keys().hasAll(['deviceId', 'nickname', 'hasVotedRound1', 'hasVotedRound2', 'lastSeen']) &&
+             data.keys().hasOnly(['deviceId', 'nickname', 'hasVotedRound1', 'hasVotedRound2', 'lastSeen']) &&
+             data.deviceId is string && data.deviceId.size() <= 64 &&
+             data.nickname is string && data.nickname.size() <= 32 &&
+             data.hasVotedRound1 is bool &&
+             data.hasVotedRound2 is bool &&
+             data.lastSeen is string && data.lastSeen.size() <= 64;
+    }
+
+    function isValidVote(data) {
+      return data.keys().hasAll(['candidateNumber', 'round', 'timestamp']) &&
+             data.keys().hasOnly(['candidateNumber', 'round', 'timestamp']) &&
+             data.candidateNumber in ['91', '92', '93', 'BRANCO', 'NULO'] &&
+             data.round is number &&
+             data.timestamp is string && data.timestamp.size() <= 64;
+    }
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Estado da eleição
+    match /election_state/{docId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(docId) && isValidElection(incoming());
+      allow delete: if isValidId(docId);
+    }
+
+    // Resultados apurados oficiais compartilhados com alunos e professor
+    match /election_results/{docId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(docId);
+      allow delete: if isValidId(docId);
+    }
+
+    // Presenças dos alunos
+    match /presences/{deviceId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(deviceId) && isValidPresence(incoming());
+      allow delete: if isValidId(deviceId);
+    }
+
+    // Votos anônimos do 1º Turno
+    match /secret_votes_r1/{voteId} {
+      allow get, list: if true;
+      allow create: if isValidId(voteId) && isValidVote(incoming());
+      allow update: if false; // Cédula depois de depositada é imutável
+      allow delete: if isValidId(voteId); // Permite zerar ao reiniciar
+    }
+
+    // Votos anônimos do 2º Turno
+    match /secret_votes_r2/{voteId} {
+      allow get, list: if true;
+      allow create: if isValidId(voteId) && isValidVote(incoming());
+      allow update: if false; // Cédula depois de depositada é imutável
+      allow delete: if isValidId(voteId); // Permite zerar ao reiniciar
+    }
+  }
+}
